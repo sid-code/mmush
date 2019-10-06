@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE muclient>
+
+<muclient>
+  <plugin
+      name="maputils"
+      author="Morn"
+      id="0ce6a05ac145aa4160690513"
+      language="Lua"
+      purpose="A frontend for Morn's Mapper Utilities"
+      save_state="y"
+      requires="4.98"
+      version="0.01"
+      >
+    <description trim="y">
+      <![CDATA[
+      ]]>
+    </description>
+  </plugin>
+
+  <aliases>
+    <alias name="pathto" match="^mu pt (\d+)$" regexp="y" enabled="y" script="pathto" />
+    <alias name="pathto2" match="^mu pt (\d+) (\d+)$" regexp="y" enabled="y" script="pathto" />
+    <alias name="runto" match="^mu rt (\d+)$" regexp="y" enabled="y" script="pathto" />
+  </aliases>
+  <script>
+    <![CDATA[
+      
+      -- set up require path (stolen from mobber)
+      local path = string.match(GetPluginInfo(GetPluginID(), 6), "(.*)\\.*$") .. "\\lua\\";
+      package.path = path .. "?;" .. path .. "?.lua;" .. package.path;
+         
+      -- load the real plugin code
+      require("maputils-frontend");
+    ]]>
+  </script>
+</muclient>
