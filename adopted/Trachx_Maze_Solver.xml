@@ -137,6 +137,7 @@
 <![CDATA[
 
 
+require("gmcphelper")
 
 
 ms_basearea = ""
@@ -150,8 +151,7 @@ enablemap = false
 
 function MazeNextRoom_dir (name, line, wildcards)
 	dir = wildcards.direction
-	res, gmcparg = CallPlugin("3e7dedbe37e44942dd46d264","gmcpval","room.info")
-	tt = assert (loadstring ('return ' .. gmcparg or ""))()
+        local tt = gmcp("room.info")
 
 	ColourNote( "black","#F5F5DC", "Try to go " .. dir)
 	lastroom = tt.num
@@ -161,8 +161,7 @@ function MazeNextRoom_dir (name, line, wildcards)
 end
 
 function MazeNextRoom ()
-	res, gmcparg = CallPlugin("3e7dedbe37e44942dd46d264","gmcpval","room.info")
-	tt = assert (loadstring ('return ' .. gmcparg or ""))()
+        local tt = gmcp("room.info")
 	if tt['zone'] then
 		thisroom = tt.num
 
@@ -267,8 +266,7 @@ function MazeShowHelp()
 end
 
 function StartSolver ()
-	res, gmcparg = CallPlugin("3e7dedbe37e44942dd46d264","gmcpval","room.info")
-	tt = assert (loadstring ('return ' .. gmcparg or ""))()
+        local tt = gmcp("room.info")
 	if tt['zone'] then
 		ms_room_table = {}
 		AddRoom(tt)
@@ -306,8 +304,7 @@ function OnPluginBroadcast (msg, id, name, text)
 
 -- if repop occured - remove rooms from repop area
   if (id == '3e7dedbe37e44942dd46d264' and text == 'comm.repop') then
-	res, gmcparg = CallPlugin("3e7dedbe37e44942dd46d264","gmcpval","room.info")
-	tt = assert (loadstring ('return ' .. gmcparg or ""))()
+        local tt = gmcp("room.info")
 	removed = false
 	if tt['zone'] then
 		for i=#ms_room_table,1,-1 do
@@ -325,9 +322,7 @@ function OnPluginBroadcast (msg, id, name, text)
 
 
   if (id == '3e7dedbe37e44942dd46d264' and text == 'room.info' and enablemap) then
-	res, gmcparg = CallPlugin("3e7dedbe37e44942dd46d264","gmcpval","room.info")
-
-	tt = assert (loadstring ('return ' .. gmcparg or ""))()
+        local tt = gmcp("room.info")
 	thisroom = tt.num
 
 	done = false
@@ -362,8 +357,7 @@ end
 function MazeGotoRoom (name, line, wildcards)
 	ColourNote( "black","#F5F5DC", wildcards.roomid)
 	visited = "-1"
-	res, gmcparg = CallPlugin("3e7dedbe37e44942dd46d264","gmcpval","room.info")
-	tt = assert (loadstring ('return ' .. gmcparg or ""))()
+        local tt = gmcp("room.info")
 	if tt['zone'] then
 		thisroom = tt.num
 		if thisroom == wildcards.roomid then
