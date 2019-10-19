@@ -10,22 +10,34 @@ require("wait")
 
 require("gmcphelper")
 
-local mu
-local geo = globaleventobject
+maputils.frontend = {}
 
-local loglevel = log.level.debug
+-- Tags to echo for synchronising with the MUD.
+maputils.frontend.swbegintag = "{speedwalk begin}"
+maputils.frontend.swendtag = "{speedwalk end}"
+maputils.frontend.prewaittag = "{speedwalk wait}"
+
+-- Minimum level to log
+maputils.frontend.loglevel = log.level.debug
+
+-- This will hold the instance of the maputils class
+maputils.frontend.object = nil
+
+-- Information about the character that we need to calculate paths.
+maputils.frontend.curlevel = -1
+maputils.frontend.curuid = nil
+
+local geo = globaleventobject
 
 geo:on("install",
        function(event)
-         mu = maputils:new("Aardwolf.db", "mazes.db")
-         mu:setlevel(gmcp("char.base.tier") * 10 + gmcp("char.status.level"))
-         mu.curuid = gmcp("room.info.num")
+         maputils.frontend.object = maputils:new("Aardwolf.db", "mazes.db")
        end
 )
 
 geo:on("close",
        function(event)
-         mu:close()
+         maputils.frontend.object:close()
        end
 )
 
@@ -33,21 +45,31 @@ geo:on("broadcast",
        function(event)
          local id = event.data.id
          local text = event.data.text
-         if id == pluginids.gmcphelper then
+         if id == pluginids.mush.gmcphelper then
            if text == "room.info" then
-             mu.curuid = gmcp("room.info.num")
+             maputils.frontend.curuid = tostring(gmcp("room.info.num"))
+           elseif text == "char.status" then
+             maputils.frontend.curlevel = gmcp("char.base.tier") * 10 + gmcp("char.status.level")
            end
+
          end
        end
 )
 
+-- Expects a list of string commands, and returns back a pair:
+-- (partial: boolean, commands: string list).
+--
+-- Partial being true means that the speedwalk cannot be completed due
+-- to a maze being in the way.
 function condense(path)
   local dirs = { n = 1, e = 1, s = 1, w = 1, u = 1, d = 1 }
   local cursw = ""
   local result = {}
+  local partial = false
+
   for _, cmd in pairs(path) do
     if cmd == "MAZE" then
-      mu:note("@YRun will abort at beginning of maze!@W")
+      partial = true
       break
     end
     if dirs[cmd] then
@@ -63,17 +85,57 @@ function condense(path)
   if #cursw > 0 then
     table.insert(result, "run " .. cursw)
   end
-  return result
+  return partial, result
+end
+
+function runsw(path)
+  -- Each element of path is a command to be entered. Each command may
+  -- contain semicolons.
+  local cmd, subcmd
+  for _, cmd in pairs(path) do
+    for subcmd in string.gmatch(cmd, "[^;]+") do
+      maputils.frontend.object:log("Executing: @Y" .. subcmd .. "@W")
+      myexecute(subcmd)
+    end
+  end
+
+  myexecute("echo " .. maputils.frontend.swendtag)
+
+end
+
+local function quietexecute(cmd)
+  local original_echo_setting = GetOption("display_my_input")
+  SetOption ("display_my_input", 0)
+  Execute(cmd)
+  SetOption ("display_my_input", original_echo_setting)
+end
+
+function myexecute(cmd)
+  local wait_time = string.match(cmd, "wait%((%d+)%)")
+
+  if wait_time == nil then
+    quietexecute(cmd)
+  else
+    quietexecute("echo " .. maputils.frontend.prewaittag)
+    wait.match(maputils.frontend.prewaittag, 10, 4)
+    maputils.frontend.object:log("Waiting " .. wait_time .. " seconds.")
+    wait.time(tonumber(wait_time))
+  end
 end
 
 function pathto(name, line, wildcards)
+  if maputils.frontend.curlevel == -1 then
+    maputils.frontend.object:error("I don't know your level. Move or type look.")
+    return
+  end
+
   local fromuid, touid
   if name == "pathto" or name == "runto" then
-    fromuid = mu.curuid
     touid = wildcards[1]
+    fromuid = maputils.frontend.curuid
 
-    if fromuid == nil then
-      mu:error("I don't know where you are. Move or type look.")
+    if fromuid== nil then
+      maputils.frontend.object:error("I don't know where you are. Move or type look.")
       return
     end
   elseif name == "pathto2" then
@@ -81,18 +143,24 @@ function pathto(name, line, wildcards)
     touid = wildcards[2]
   end
 
-  local path = mu:findpath(fromuid, touid)
+  local path = maputils.frontend.object:findpath(fromuid, touid, maputils.frontend.curlevel)
   if path == nil then
-    mu:error("Could not find a path from @C" .. fromuid .. "@W to @C" .. touid .. "@W")
+    maputils.frontend.object:error("Could not find a path from @C" .. fromuid .. "@W to @C" .. touid .. "@W")
     return
   else
-    mu:note("Path from @C" .. fromuid .. "@W to @C" .. touid .. "@W:")
-    mu:note(table.concat(path, ";"))
+    maputils.frontend.object:note("Path from @C" .. fromuid .. "@W to @C" .. touid .. "@W:")
+    maputils.frontend.object:note(table.concat(path, ";"))
   end
 
   if name == "runto" then
-    local realpath = condense(path)
-    Execute(table.concat(realpath, ';'))
+    local partial, realpath = condense(path)
+    wait.make(function()
+        runsw(realpath)
+        wait.match(maputils.frontend.swendtag, 100, 4)
+        if partial then
+          maputils.frontend.object:note("Speedwalk not completed due to maze.")
+        end
+    end)
   end
 
 end

@@ -60,7 +60,6 @@ function maputils:new(db_path, maze_db_path)
   obj.roomcache = {}
   obj.pathcache = {}
 
-  obj.level = 0
   obj.bouncerecall = nil
   obj.bounceportal = nil
   obj:readbouncesettings()
@@ -90,16 +89,6 @@ end
  
 -- install all the helper log functions like "note" "debug" etc
 log.install(maputils)
-
--- Sets the level with which to calculate paths. (Some exits are level
--- locked.)
-function maputils:setlevel(newlevel)
-  -- don't invalidate the cache unnecessarily
-  if newlevel ~= self.level then
-    self.level = newlevel
-    self.pathcache = {}
-  end
-end
 
 -- Wrapper around sqlite3.db.nrows. Sometimes it doesn't exist, and we need to
 -- fall back on sqlite3.db.rows.
@@ -194,7 +183,7 @@ local exitdir = {
 -- @param uid {string} the uid of the room
 -- @param direction {exitdir} the direction in which to search
 -- @return a list of {room, direction}, and a list of portal commands
-function maputils:getnearbyrooms(uid, direction)
+function maputils:getnearbyrooms(uid, direction, level)
   if direction == nil then direction = direction.to end
   -- First, we select the correct query template depending on the
   -- direction of the search.
@@ -216,7 +205,7 @@ function maputils:getnearbyrooms(uid, direction)
   -- Perform the actual query and record the results.
   local query
   local sqluid = fixsql(uid)
-  local sqllevel = fixsql(tostring(self.level))
+  local sqllevel = fixsql(tostring(level))
   if self.maze_db_path then
     query = string.format(querytemplate, sqluid, sqllevel, sqluid)
   else
@@ -268,10 +257,9 @@ local function getpath(node, reversed)
   return path
 end
 
-function maputils:findpath(fromuid, touid)
+function maputils:findpath(fromuid, touid, level)
   -- Set of visited uids
   local visited = {}
-
 
   -- First, we need to get to a room that can be exited through a
   -- portal. If not, we need to create a pre-path that gets us to a
@@ -286,7 +274,7 @@ function maputils:findpath(fromuid, touid)
     prepath = {self.bouncerecall.dir}
   else
     -- norecall and noportal. GET TO THE CHOPPA
-    prepath = self:GETTODACHOPPA(fromuid)
+    prepath = self:GETTODACHOPPA(fromuid, level)
     if prepath == nil then
       return prepath
     end
@@ -308,11 +296,11 @@ function maputils:findpath(fromuid, touid)
           local topuid = top.touid
           if visited[topuid] then goto continue end -- yuck
           
-          if top.touid == fromuid then
+          if topuid == fromuid then
             return top, nil
           end
           
-          local roomsfrom, portals = self:getnearbyrooms(topuid, exitdir.to)
+          local roomsfrom, portals = self:getnearbyrooms(topuid, exitdir.to, level)
           if #portals > 0 then
             return top, portals[1]
           end
@@ -353,7 +341,7 @@ function maputils:findpath(fromuid, touid)
   return exitpath
 end
 
-function maputils:GETTODACHOPPA(fromuid)
+function maputils:GETTODACHOPPA(fromuid, level)
   -- We do a bfs to a portallable room.  This is code duplication,
   -- but I prefer that to creating convoluted abstractions.
   local stack = {makenode(fromuid, nil, nil)}
