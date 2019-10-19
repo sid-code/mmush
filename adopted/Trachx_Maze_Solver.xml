@@ -225,11 +225,13 @@ CREATE TABLE IF NOT EXISTS mexits (fromuid TEXT, touid TEXT, UNIQUE(fromuid, tou
 	for i, room in ipairs(ms_room_table) do
 		-- direction doesn't matter
 		for _, touid in pairs(room.exits) do
+                  print("Dumping exit: ", room.num, touid)
 			assert(db:execute(
 				       string.format("INSERT INTO mexits VALUES ('%s', '%s')",
 						     room.num, touid)))
 		end
 	end
+        db:close_vm()
 end
 
 function MazeDump ()
