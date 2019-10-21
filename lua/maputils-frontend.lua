@@ -28,34 +28,35 @@ maputils.frontend.curlevel = -1
 maputils.frontend.curuid = nil
 
 local geo = globaleventobject
-
-geo:on("install",
-       function(event)
-         SendNoEcho("protocols gmcp sendchar")
-         maputils.frontend.object = maputils:new("Aardwolf.db", "mazes.db")
-       end
-)
-
-geo:on("close",
-       function(event)
-         maputils.frontend.object:close()
-       end
-)
-
-geo:on("broadcast",
-       function(event)
-         local id = event.data.id
-         local text = event.data.text
-         if id == pluginids.mush.gmcphelper then
-           if text == "room.info" then
-             maputils.frontend.curuid = tostring(gmcp("room.info.num"))
-           elseif text == "char.status" then
-             maputils.frontend.curlevel = gmcp("char.base.tier") * 10 + gmcp("char.status.level")
-           end
-
+function maputils.frontend.init()
+  geo:on("install",
+         function(event)
+           SendNoEcho("protocols gmcp sendchar")
+           maputils.frontend.object = maputils:new("Aardwolf.db", "mazes.db")
          end
-       end
-)
+  )
+
+  geo:on("close",
+         function(event)
+           maputils.frontend.object:close()
+         end
+  )
+
+  geo:on("broadcast",
+         function(event)
+           local id = event.data.id
+           local text = event.data.text
+           if id == pluginids.mush.gmcphelper then
+             if text == "room.info" then
+               maputils.frontend.curuid = tostring(gmcp("room.info.num"))
+             elseif text == "char.status" then
+               maputils.frontend.curlevel = gmcp("char.base.tier") * 10 + gmcp("char.status.level")
+             end
+
+           end
+         end
+  )
+end
 
 -- Expects a list of string commands, and returns back a pair:
 -- (partial: boolean, commands: string list).

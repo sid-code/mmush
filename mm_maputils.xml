@@ -30,11 +30,12 @@
     <![CDATA[
       
       -- set up require path (stolen from mobber)
-      local path = string.match(GetPluginInfo(GetPluginID(), 6), "(.*)\\.*$") .. "\\lua\\";
-      package.path = path .. "?;" .. path .. "?.lua;" .. package.path;
+      local path = string.match(GetPluginInfo(GetPluginID(), 6), "(.*)\\.*$") .. "\\lua\\"
+      package.path = path .. "?;" .. path .. "?.lua;" .. package.path
          
       -- load the real plugin code
-      require("maputils-frontend");
+      require("maputils-frontend")
+      maputils.frontend.init()
     ]]>
   </script>
 </muclient>
