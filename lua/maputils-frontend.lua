@@ -31,6 +31,7 @@ local geo = globaleventobject
 
 geo:on("install",
        function(event)
+         SendNoEcho("protocols gmcp sendchar")
          maputils.frontend.object = maputils:new("Aardwolf.db", "mazes.db")
        end
 )
