@@ -24,8 +24,8 @@ maputils.sql = {
   roombyuid = 'SELECT * FROM rooms WHERE uid = %s',
   exitsbyuidfrom = 'SELECT fromuid, touid, dir, length(dir) FROM exits WHERE fromuid = %s AND level <= %s AND NOT(touid = "-1")',
   exitsbyuidto = 'SELECT fromuid, touid, dir, length(dir) FROM exits WHERE touid = %s AND (level = NULL or level <= %s)',
-  mexitsbyuidfrom = 'SELECT fromuid, touid, "MAZE" as dir, 0 FROM mazedb.mexits WHERE fromuid = %s',
-  mexitsbyuidto = 'SELECT fromuid, touid, "MAZE" as dir, 0 FROM mazedb.mexits WHERE touid = %s',
+  mexitsbyuidfrom = 'SELECT fromuid, touid, "MAZE(" || fromuid || "," || touid || ")" as dir, 0 FROM mazedb.mexits WHERE fromuid = %s',
+  mexitsbyuidto = 'SELECT fromuid, touid, "MAZE(" || fromuid || "," || touid || ")" as dir, 0 FROM mazedb.mexits WHERE touid = %s',
 
   getbounces = 'SELECT data FROM storage WHERE name = \'bounce_recall\' OR name = \'bounce_portal\'',
   getareabyname = "SELECT uid FROM areas WHERE name = %s",

@@ -68,7 +68,8 @@ function condense(path)
   local partial = false
 
   for _, cmd in pairs(path) do
-    if cmd == "MAZE" then
+    local mt = string.match(cmd, "MAZE%((%d+,%d+)%)")
+    if mt then
       partial = true
       break
     end
@@ -112,15 +113,22 @@ end
 
 function myexecute(cmd)
   local wait_time = string.match(cmd, "wait%((%d+)%)")
+  local maze_target = string.match(cmd, "MAZE%((%d+,%d+)%)")
 
-  if wait_time == nil then
-    quietexecute(cmd)
-  else
+  if wait_time then
     quietexecute("echo " .. maputils.frontend.prewaittag)
     wait.match(maputils.frontend.prewaittag, 10, 4)
     maputils.frontend.object:log("Waiting " .. wait_time .. " seconds.")
     wait.time(tonumber(wait_time))
+    return
   end
+
+  if maze_target then
+    return
+  end
+
+  quietexecute(cmd)
+
 end
 
 function pathto(name, line, wildcards)
