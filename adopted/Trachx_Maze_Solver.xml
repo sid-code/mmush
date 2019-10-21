@@ -225,14 +225,17 @@ CREATE TABLE IF NOT EXISTS mexits (fromuid TEXT, touid TEXT, UNIQUE(fromuid, tou
 	for i, room in ipairs(ms_room_table) do
 		-- direction doesn't matter
 		for _, touid in pairs(room.exits) do
-                  print("Dumping exit: ", room.num, touid)
-			assert(db:execute(
-				       string.format("INSERT INTO mexits VALUES ('%s', '%s')",
-						     room.num, touid)))
+			if touid == -1 then
+				print("Refusing to dump exit ", room.num, touid)
+			else
+				print("Dumping exit: ", room.num, touid)
+				assert(db:execute(string.format("INSERT INTO mexits VALUES ('%s', '%s')", room.num, touid)))
+			end
 		end
 	end
-        db:close_vm()
+	db:close_vm()
 end
+
 
 function MazeDump ()
 	ColourNote( "black","#F5F5DC", "Rooms in maze solver tables:")		
@@ -248,13 +251,13 @@ end
 
 
 function MazeShowHelp() 
-
 	ColourNote("black","#F5F5DC"," " .. "---------------------------------------------------------------------------- ")
 	ColourNote("black","#F5F5DC"," " .. "Maze solver by Trachx *experimental*                                ver 1.01 ")
 	ColourNote("black","#F5F5DC"," " .. "---------------------------------------------------------------------------- ")
 	ColourNote("black","#F5F5DC"," " .. "  #maze_help       - this info                                               ")
 	ColourNote("black","#F5F5DC"," " .. "  #maze            - clear Maze Solver tables                                ")
 	ColourNote("black","#F5F5DC"," " .. "  #maze_dump       - display rooms visited so far and exits                  ")
+	ColourNote("black","#F5F5DC"," " .. "  #maze_dump_db    - dump the current maze topology to mazes.db              ")
 	ColourNote("black","#F5F5DC"," " .. "  #maze_next       - try to go to next unmapped room                         ")
 	ColourNote("black","#F5F5DC"," " .. "  #maze_goto <num> - go to room number <num>, use #maze_dump to get <num>    ")
 	ColourNote("black","#F5F5DC"," " .. "  #maze_next_dir <e|s|w|u|d|n> - go into specified direction instead next    ")
@@ -263,6 +266,7 @@ function MazeShowHelp()
 	ColourNote("black","#F5F5DC"," " .. "  exit. Sometimes you need to use #maze_goto <room> if you won't be taken    ")
 	ColourNote("black","#F5F5DC"," " .. "  there automatically. Best start just after repop to have enough time to    ")
 	ColourNote("black","#F5F5DC"," " .. "  map maze. While you stay in area repops are detected and clear maze table. ")
+
 	ColourNote("black","#F5F5DC"," " .. "---------------------------------------------------------------------------- ")
     
 end
