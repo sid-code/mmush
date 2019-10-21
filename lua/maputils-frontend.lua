@@ -62,7 +62,7 @@ geo:on("broadcast",
 --
 -- Partial being true means that the speedwalk cannot be completed due
 -- to a maze being in the way.
-function condense(path)
+function maputils.frontend.condense(path)
   local dirs = { n = 1, e = 1, s = 1, w = 1, u = 1, d = 1 }
   local cursw = ""
   local result = {}
@@ -90,34 +90,33 @@ function condense(path)
   return partial, result
 end
 
-function runsw(path)
+function maputils.frontend.runsw(path)
   -- Each element of path is a command to be entered. Each command may
   -- contain semicolons.
   local cmd, subcmd
   for _, cmd in pairs(path) do
     for subcmd in string.gmatch(cmd, "[^;]+") do
       maputils.frontend.object:log("Executing: @Y" .. subcmd .. "@W")
-      myexecute(subcmd)
+      maputils.frontend.execute(subcmd)
     end
   end
 
-  myexecute("echo " .. maputils.frontend.swendtag)
-
+  maputils.frontend.quietexecute("echo " .. maputils.frontend.swendtag)
 end
 
-local function quietexecute(cmd)
+function maputils.frontend.quietexecute(cmd)
   local original_echo_setting = GetOption("display_my_input")
   SetOption ("display_my_input", 0)
   Execute(cmd)
   SetOption ("display_my_input", original_echo_setting)
 end
 
-function myexecute(cmd)
+function maputils.frontend.execute(cmd)
   local wait_time = string.match(cmd, "wait%((%d+)%)")
   local maze_target = string.match(cmd, "MAZE%((%d+,%d+)%)")
 
   if wait_time then
-    quietexecute("echo " .. maputils.frontend.prewaittag)
+    maputils.frontend.quietexecute("echo " .. maputils.frontend.prewaittag)
     wait.match(maputils.frontend.prewaittag, 10, 4)
     maputils.frontend.object:log("Waiting " .. wait_time .. " seconds.")
     wait.time(tonumber(wait_time))
@@ -128,11 +127,10 @@ function myexecute(cmd)
     return
   end
 
-  quietexecute(cmd)
-
+  maputils.frontend.quietexecute(cmd)
 end
 
-function pathto(name, line, wildcards)
+function maputils.frontend.pathto(name, line, wildcards)
   if maputils.frontend.curlevel == -1 then
     maputils.frontend.object:error("I don't know your level. Move or type look.")
     return
@@ -162,9 +160,9 @@ function pathto(name, line, wildcards)
   end
 
   if name == "runto" then
-    local partial, realpath = condense(path)
+    local partial, realpath = maputils.frontend.condense(path)
     wait.make(function()
-        runsw(realpath)
+        maputils.frontend.runsw(realpath)
         wait.match(maputils.frontend.swendtag, 100, 4)
         if partial then
           maputils.frontend.object:note("Speedwalk not completed due to maze.")
