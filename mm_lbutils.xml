@@ -1,0 +1,73 @@
+
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE muclient>
+
+<muclient>
+  <plugin
+      name="lbutils"
+      author="Morn"
+      id="0ce22252abcabc4166690420"
+      language="Lua"
+      purpose="Some utilities for lbid (including notifications)"
+      save_state="y"
+      requires="4.98"
+      version="0.01"
+      >
+    <description trim="y">
+      <![CDATA[
+@Y=====================================================================
+
+@YCommands
+@Y--------
+@Glbu watch @C<market # number>@w  : run the notification command when the
+                               specified lbid has only 15 minutes.
+@Glbu unwatch @C<market # number>@w: remove the item from the watch list.
+@Glbu setnotify <command>@w      : set the notify command.
+@Glbu show@w                     : display all listings being watched.
+@Glbu clear@w                    : remove all watches.
+
+@YThe notify command
+@Y------------------
+
+@wLet's say you run @Glbu setnotify echo.@w Then, when the following
+message appears: "Market: Bid of 10 gold on terrible equipment (Level
+1, Num 420)" and you had previously typed @Glbu watch 420@w, this
+plugin will run something like @Gecho Market auction 420 is going to
+end!@w
+
+@Y======================================================================
+      ]]>
+    </description>
+  </plugin>
+
+  <triggers>
+    <trigger name="expiry" match="Market: Bid of * on * (Level *, Num *)"
+             enabled="y" script="lbutils.trigger.expiringsoon"></trigger>
+  </triggers>
+  <aliases>
+    <alias name="lbutils_help" match="^lbu help" regexp="y" enabled="y"
+           script="lbutils.alias.help" />
+    <alias name="lbutils_watch" match="^lbu watch (\d+)$" regexp="y" enabled="y"
+           script="lbutils.alias.watch" />
+    <alias name="lbutils_unwatch" match="^lbu unwatch (\d+)$" regexp="y" enabled="y"
+           script="lbutils.alias.unwatch" />
+    <alias name="lbutils_show" match="^lbu (show|display)$" regexp="y" enabled="y"
+           script="lbutils.alias.show" />
+    <alias name="lbutils_clear" match="^lbu (clear|reset)$" regexp="y" enabled="y"
+           script="lbutils.alias.clear" />
+
+    <alias name="lbutils_setnotify" match="^lbu setnotify (.+)$" regexp="y" enabled="y"
+           script="lbutils.alias.setnotify" />
+  </aliases>
+  <script>
+    <![CDATA[
+      
+      -- set up require path (stolen from mobber)
+      local path = string.match(GetPluginInfo(GetPluginID(), 6), "(.*)\\.*$") .. "\\lua\\"
+      package.path = path .. "?;" .. path .. "?.lua;" .. package.path
+         
+      -- load the real plugin code
+      require("lbutils")
+    ]]>
+  </script>
+</muclient>
