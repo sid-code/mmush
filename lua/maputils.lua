@@ -77,6 +77,11 @@ function maputils:opendb(db_path)
   self.db = assert(sqlite3.open(db_path))
 end
 
+function maputils:dropcaches()
+  self.roomcache = {}
+  self.pathcache = {}
+end
+
 function maputils:attachmazedb(maze_db_path)
   self.maze_db_path = maze_db_path
   local attachquery = string.format(maputils.sql.attachdb, fixsql(maze_db_path), "mazedb")

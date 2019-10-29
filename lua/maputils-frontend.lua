@@ -174,3 +174,8 @@ function maputils.frontend.alias.pathto(name, line, wildcards)
   end
 
 end
+
+function maputils.frontend.alias.dropcache()
+  maputils.frontend.object:dropcaches()
+  maputils.frontend.object:log("Dropped caches.")
+end

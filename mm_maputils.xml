@@ -25,6 +25,9 @@
            script="maputils.frontend.alias.pathto" />
     <alias name="runto" match="^mu rt (\d+)$" regexp="y" enabled="y"
            script="maputils.frontend.alias.pathto" />
+
+    <alias name="dropcache" match="^mu dropcache$" regexp="y" enabled="y"
+           script="maputils.frontend.alias.dropcache" />
   </aliases>
   <script>
     <![CDATA[
