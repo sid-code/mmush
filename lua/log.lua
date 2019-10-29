@@ -41,7 +41,7 @@ function log:warn(message)
   self:log(message, log.level.error)
 end
 function log:note(message)
-  self:log(message, log.level.error)
+  self:log(message, log.level.note)
 end
 function log:debug(message)
   self:log(message, log.level.error)
