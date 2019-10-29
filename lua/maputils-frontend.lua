@@ -131,7 +131,9 @@ function maputils.frontend.execute(cmd)
   maputils.frontend.quietexecute(cmd)
 end
 
-function maputils.frontend.pathto(name, line, wildcards)
+maputils.frontend.alias = {}
+
+function maputils.frontend.alias.pathto(name, line, wildcards)
   if maputils.frontend.curlevel == -1 then
     maputils.frontend.object:error("I don't know your level. Move or type look.")
     return

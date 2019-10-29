@@ -20,11 +20,11 @@
 
   <aliases>
     <alias name="pathto" match="^mu pt (\d+)$" regexp="y" enabled="y"
-           script="maputils.frontend.pathto" />
+           script="maputils.frontend.alias.pathto" />
     <alias name="pathto2" match="^mu pt (\d+) (\d+)$" regexp="y" enabled="y"
-           script="maputils.frontend.pathto" />
+           script="maputils.frontend.alias.pathto" />
     <alias name="runto" match="^mu rt (\d+)$" regexp="y" enabled="y"
-           script="maputils.frontend.pathto" />
+           script="maputils.frontend.alias.pathto" />
   </aliases>
   <script>
     <![CDATA[
