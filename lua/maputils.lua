@@ -29,7 +29,8 @@ maputils.sql = {
 
   getbounces = 'SELECT data FROM storage WHERE name = \'bounce_recall\' OR name = \'bounce_portal\'',
   getareabyname = "SELECT uid FROM areas WHERE name = %s",
-  attachdb = "ATTACH DATABASE %s AS %s"
+  attachdb = "ATTACH DATABASE %s AS %s",
+  detachdb = "DETACH DATABASE %s"
 }
 
 -- Constructor a maputils object. Opens a connection to the database
@@ -51,11 +52,10 @@ function maputils:new(db_path, maze_db_path)
       fatal = "@RMAPUTILS:@W $MSG"},
     log.level.info)
 
-  obj:opendb(db_path)
+  obj.db_path = db_path
+  obj.maze_db_path = maze_db_path
 
-  if maze_db_path then
-    obj:attachmazedb(maze_db_path)
-  end
+  obj:opendb()
 
   obj.roomcache = {}
   obj.pathcache = {}
@@ -68,13 +68,8 @@ function maputils:new(db_path, maze_db_path)
 end
 
 -- Open the MUSHclient mapper database.
-function maputils:opendb(db_path)
-  if self.db ~= nil then
-    self.db:close_vm()
-  end
-  
-  self.db_path = db_path
-  self.db = assert(sqlite3.open(db_path))
+function maputils:opendb()
+  self.db = assert(sqlite3.open(self.db_path))
 end
 
 function maputils:dropcaches()
@@ -82,10 +77,25 @@ function maputils:dropcaches()
   self.pathcache = {}
 end
 
-function maputils:attachmazedb(maze_db_path)
-  self.maze_db_path = maze_db_path
-  local attachquery = string.format(maputils.sql.attachdb, fixsql(maze_db_path), "mazedb")
-  assert(self.db:execute(attachquery))
+-- Pass in anything that isn't nil or false to detach it.
+function maputils:attachmazedb(detach)
+  if self.maze_db_path == nil then
+    return
+  end
+
+  local query
+  if detach then
+    query = string.format(
+      maputils.sql.detachdb,
+      "mazedb")
+  else
+    query = string.format(
+      maputils.sql.attachdb,
+      fixsql(self.maze_db_path),
+      "mazedb")
+  end
+
+  assert(self.db:execute(query))
 end
 
 function maputils:log(message, severity)
@@ -217,6 +227,10 @@ function maputils:getnearbyrooms(uid, direction, level)
     query = string.format(querytemplate, sqluid, sqllevel)
   end
 
+  if self.maze_db_path then
+    self:attachmazedb()
+  end
+
   local nearbyrooms = {}
   local portals = {}
   for row in assert(self:dbnrows(query)) do
@@ -235,6 +249,11 @@ function maputils:getnearbyrooms(uid, direction, level)
       end
     end
   end
+
+  if self.maze_db_path then
+    self:attachmazedb("detach")
+  end
+
   return nearbyrooms, portals
 end
 
@@ -281,7 +300,7 @@ function maputils:findpath(fromuid, touid, level)
     -- norecall and noportal. GET TO THE CHOPPA
     prepath = self:GETTODACHOPPA(fromuid, level)
     if prepath == nil then
-      return prepath
+      return nil, nil
     end
   end
 

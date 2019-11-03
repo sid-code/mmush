@@ -173,6 +173,12 @@ function maputils.frontend.alias.pathto(name, line, wildcards)
     end)
   end
 
+  -- This needs to be done, otherwise any attached databases remain
+  -- locked forever.
+  -- TODO: find a better way to manage this.
+  maputils.frontend.object:close()
+  maputils.frontend.object:opendb()
+
 end
 
 function maputils.frontend.alias.dropcache()

@@ -219,21 +219,30 @@ function MazeDumpDB()
 	local db = assert(sqlite3.open(db_path))
 	
 	assert(db:execute([[
-CREATE TABLE IF NOT EXISTS mexits (fromuid TEXT, touid TEXT, UNIQUE(fromuid, touid)) ;
+CREATE TABLE IF NOT EXISTS mexits (fromuid TEXT, touid TEXT, UNIQUE(fromuid, touid)) ON CONFLICT IGNORE ;
 ]]))
+
+        local stmt = "BEGIN TRANSACTION;\n"
 
 	for i, room in ipairs(ms_room_table) do
 		-- direction doesn't matter
 		for _, touid in pairs(room.exits) do
-			if touid == -1 then
+			if tostring(touid) == "-1" then
 				print("Refusing to dump exit ", room.num, touid)
 			else
-				print("Dumping exit: ", room.num, touid)
-				assert(db:execute(string.format("INSERT INTO mexits VALUES ('%s', '%s')", room.num, touid)))
+				stmt = stmt .. string.format("INSERT OR IGNORE INTO mexits VALUES ('%s', '%s');\n", room.num, touid)
 			end
 		end
 	end
-	db:close_vm()
+	stmt = stmt .. "COMMIT;\n"
+        --print(stmt)
+        local result = assert(db:execute(stmt))
+        print("execute", result)
+        if result ~= 0 then
+          print("ERROR", db:errmsg())
+        end
+        
+	print("close", db:close())
 end
 
 
