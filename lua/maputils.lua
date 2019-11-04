@@ -240,7 +240,7 @@ function maputils:getnearbyrooms(uid, direction, level)
     elseif direction == exitdir.from then
       otheruid = row.touid
     end
-    if otheruid == '*' then
+    if otheruid == '*' or otheruid == '**' then
       table.insert(portals, row.dir)
     else
       local room = self:getroom(otheruid)
@@ -378,12 +378,7 @@ function maputils:GETTODACHOPPA(fromuid, level)
     if visited[topuid] then goto continue end
 
     local toproom = self:getroom(topuid)
-    if toproom.norecall ~= 1 and self.bouncerecall.dir then
-      -- pass 1 to reverse path
-      local path = getpath(top, 1)
-      table.insert(path, self.bouncerecall.dir)
-      return path
-    elseif toproom.noportal ~= 1 then
+    if toproom.noportal ~= 1 or (toproom.norecall ~= 1 and self.bouncerecall.dir) then
       return getpath(top, 1)
     end
 
