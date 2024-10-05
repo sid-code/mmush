@@ -1,7 +1,7 @@
 -- maputils.
 -- provide usable mapping functions because the other one doesn't.
 -- Written by Morn, around 22 September 2019
-local sqlite3 = require('sqlite3')
+local sqlite3 = require("sqlite3")
 require("log")
 require("cache")
 
@@ -9,7 +9,7 @@ require("cache")
 function fixsql(s)
   if s then
     -- surround with ', and ' => ''
-    return "'" .. string.gsub(s, "'", "''") .. "'" 
+    return "'" .. string.gsub(s, "'", "''") .. "'"
   else
     return "NULL"
   end
@@ -22,16 +22,16 @@ maputils = {}
 -- janky things like concatenate these without worrying about pesky
 -- semicolons.
 maputils.sql = {
-  roombyuid = 'SELECT * FROM rooms WHERE uid = %s',
+  roombyuid = "SELECT * FROM rooms WHERE uid = %s",
   exitsbyuidfrom = 'SELECT fromuid, touid, dir, length(dir) FROM exits WHERE fromuid = %s AND level <= %s AND NOT(touid = "-1")',
-  exitsbyuidto = 'SELECT fromuid, touid, dir, length(dir) FROM exits WHERE touid = %s AND (level = NULL or level <= %s)',
+  exitsbyuidto = "SELECT fromuid, touid, dir, length(dir) FROM exits WHERE touid = %s AND (level = NULL or level <= %s)",
   mexitsbyuidfrom = 'SELECT fromuid, touid, "MAZE(" || fromuid || "," || touid || ")" as dir, 0 FROM mazedb.mexits WHERE fromuid = %s',
   mexitsbyuidto = 'SELECT fromuid, touid, "MAZE(" || fromuid || "," || touid || ")" as dir, 0 FROM mazedb.mexits WHERE touid = %s',
 
-  getbounces = 'SELECT data FROM storage WHERE name = \'bounce_recall\' OR name = \'bounce_portal\'',
+  getbounces = "SELECT data FROM storage WHERE name = 'bounce_recall' OR name = 'bounce_portal'",
   getareabyname = "SELECT uid FROM areas WHERE name = %s",
   attachdb = "ATTACH DATABASE %s AS %s",
-  detachdb = "DETACH DATABASE %s"
+  detachdb = "DETACH DATABASE %s",
 }
 
 -- Constructor a maputils object. Opens a connection to the database
@@ -46,12 +46,14 @@ function maputils:new(db_path, maze_db_path)
   self.__index = self
 
   obj.logger = log:new(
-    log.theme:new{
+    log.theme:new({
       all = "@GMAPUTILS:@W $MSG",
       warn = "@YMAPUTILS:@W $MSG",
       error = "@RMAPUTILS:@W $MSG",
-      fatal = "@RMAPUTILS:@W $MSG"},
-    log.level.info)
+      fatal = "@RMAPUTILS:@W $MSG",
+    }),
+    log.level.info
+  )
 
   obj.db_path = db_path
   obj.maze_db_path = maze_db_path
@@ -86,14 +88,9 @@ function maputils:attachmazedb(detach)
 
   local query
   if detach then
-    query = string.format(
-      maputils.sql.detachdb,
-      "mazedb")
+    query = string.format(maputils.sql.detachdb, "mazedb")
   else
-    query = string.format(
-      maputils.sql.attachdb,
-      fixsql(self.maze_db_path),
-      "mazedb")
+    query = string.format(maputils.sql.attachdb, fixsql(self.maze_db_path), "mazedb")
   end
 
   assert(self.db:execute(query))
@@ -102,7 +99,7 @@ end
 function maputils:log(message, severity)
   self.logger:log(message, severity)
 end
- 
+
 -- install all the helper log functions like "note" "debug" etc
 log.install(maputils)
 
@@ -179,7 +176,7 @@ end
 -- edges in the directed graph.
 local exitdir = {
   to = 0,
-  from = 1
+  from = 1,
 }
 
 -- Get rooms "nearby" the room with the specified uid. Here, "nearby"
@@ -196,7 +193,9 @@ local exitdir = {
 -- @param direction {exitdir} the direction in which to search
 -- @return a list of {room, direction}, and a list of portal commands
 function maputils:getnearbyrooms(uid, direction, level)
-  if direction == nil then direction = direction.to end
+  if direction == nil then
+    direction = direction.to
+  end
   -- First, we select the correct query template depending on the
   -- direction of the search.
   local querytemplate
@@ -237,12 +236,12 @@ function maputils:getnearbyrooms(uid, direction, level)
     elseif direction == exitdir.from then
       otheruid = row.touid
     end
-    if otheruid == '*' or otheruid == '**' then
+    if otheruid == "*" or otheruid == "**" then
       table.insert(portals, row.dir)
     else
       local room = self:getroom(otheruid)
       if room then
-        table.insert(nearbyrooms, {room, row.dir})
+        table.insert(nearbyrooms, { room, row.dir })
       end
     end
   end
@@ -259,7 +258,7 @@ local function makenode(touid, dir, parent)
   return {
     touid = touid,
     dir = dir,
-    parent = parent
+    parent = parent,
   }
 end
 
@@ -292,7 +291,7 @@ function maputils:findpath(fromuid, touid, level)
     -- do nothing, we're good!
   elseif fromroom.norecall ~= 1 and self.bouncerecall then
     -- it is noportal, but not norecall. Easy, we can just bouncerecall
-    prepath = {self.bouncerecall.dir}
+    prepath = { self.bouncerecall.dir }
   else
     -- norecall and noportal. GET TO THE CHOPPA
     prepath = self:GETTODACHOPPA(fromuid, level)
@@ -301,43 +300,41 @@ function maputils:findpath(fromuid, touid, level)
     end
   end
 
-
   local found = false
 
   -- Perform BFS from touid, traversing the graph in the
   -- reverse-directed order. The aim is to find a portal room
   -- (represented by * in the exits table), or the fromuid room.
-  local path, portal =
-    (function ()
-        -- List of searchnodes to explore
-        local stack = {makenode(touid, nil, nil)}
+  local function bfs()
+    -- List of searchnodes to explore
+    local stack = { makenode(touid, nil, nil) }
 
-        while #stack > 0 do
-          local top = table.remove(stack, #stack)
-          local topuid = top.touid
-          if visited[topuid] then goto continue end -- yuck
-          
-          if topuid == fromuid then
-            return top, nil
-          end
-          
-          local roomsfrom, portals = self:getnearbyrooms(topuid, exitdir.to, level)
-          if #portals > 0 then
-            return top, portals[1]
-          end
-          
-          for _, connection in pairs(roomsfrom) do
-            local fromuid = connection[1].uid
-            local dir = connection[2]
-            table.insert(stack, 1, makenode(fromuid, dir, top))
-          end
-          
-          visited[topuid] = true
-          ::continue::
+    while #stack > 0 do
+      local top = table.remove(stack, #stack)
+      local topuid = top.touid
+      if not visited[topuid] then
+        if topuid == fromuid then
+          return top, nil
         end
 
-        return nil, nil
-    end)()
+        local roomsfrom, portals = self:getnearbyrooms(topuid, exitdir.to, level)
+        if #portals > 0 then
+          return top, portals[1]
+        end
+
+        for _, connection in pairs(roomsfrom) do
+          local fromuid = connection[1].uid
+          local dir = connection[2]
+          table.insert(stack, 1, makenode(fromuid, dir, top))
+        end
+
+        visited[topuid] = true
+      end
+    end
+
+    return nil, nil
+  end
+  local path, portal = bfs()
 
   if path == nil then
     return nil
@@ -365,29 +362,28 @@ end
 function maputils:GETTODACHOPPA(fromuid, level)
   -- We do a bfs to a portallable room.  This is code duplication,
   -- but I prefer that to creating convoluted abstractions.
-  local stack = {makenode(fromuid, nil, nil)}
+  local stack = { makenode(fromuid, nil, nil) }
   -- set of visited nodes
   local visited = {}
 
   while #stack > 0 do
     local top = table.remove(stack, #stack)
     local topuid = top.touid
-    if visited[topuid] then goto continue end
+    if not visited[topuid] then
+      local toproom = self:getroom(topuid)
+      if toproom.noportal ~= 1 or (toproom.norecall ~= 1 and self.bouncerecall.dir) then
+        return getpath(top, 1)
+      end
 
-    local toproom = self:getroom(topuid)
-    if toproom.noportal ~= 1 or (toproom.norecall ~= 1 and self.bouncerecall.dir) then
-      return getpath(top, 1)
+      local roomsto, _ = self:getnearbyrooms(top.touid, exitdir.from)
+      for _, connection in pairs(roomsto) do
+        local touid = connection[1].uid
+        local dir = connection[2]
+        table.insert(stack, 1, makenode(touid, dir, top))
+      end
+
+      visited[topuid] = true
     end
-
-    local roomsto, _ = self:getnearbyrooms(top.touid, exitdir.from)
-    for _, connection in pairs(roomsto) do
-      local touid = connection[1].uid
-      local dir = connection[2]
-      table.insert(stack, 1, makenode(touid, dir, top))
-    end
-
-    visited[topuid] = true
-    ::continue::
   end
 
   return nil

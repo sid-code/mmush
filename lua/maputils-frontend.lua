@@ -29,33 +29,26 @@ maputils.frontend.curuid = nil
 
 local geo = globaleventobject
 function maputils.frontend.init()
-  geo:on("install",
-         function(event)
-           SendNoEcho("protocols gmcp sendchar")
-           maputils.frontend.object = maputils:new("Aardwolf.db", "mazes.db")
-         end
-  )
+  geo:on("install", function(event)
+    SendNoEcho("protocols gmcp sendchar")
+    maputils.frontend.object = maputils:new("Aardwolf.db", "mazes.db")
+  end)
 
-  geo:on("close",
-         function(event)
-           maputils.frontend.object:close()
-         end
-  )
+  geo:on("close", function(event)
+    maputils.frontend.object:close()
+  end)
 
-  geo:on("broadcast",
-         function(event)
-           local id = event.data.id
-           local text = event.data.text
-           if id == pluginids.mush.gmcphelper then
-             if text == "room.info" then
-               maputils.frontend.curuid = tostring(gmcp("room.info.num"))
-             elseif text == "char.status" then
-               maputils.frontend.curlevel = gmcp("char.base.tier") * 10 + gmcp("char.status.level")
-             end
-
-           end
-         end
-  )
+  geo:on("broadcast", function(event)
+    local id = event.data.id
+    local text = event.data.text
+    if id == pluginids.mush.gmcphelper then
+      if text == "room.info" then
+        maputils.frontend.curuid = tostring(gmcp("room.info.num"))
+      elseif text == "char.status" then
+        maputils.frontend.curlevel = gmcp("char.base.tier") * 10 + gmcp("char.status.level")
+      end
+    end
+  end)
 end
 
 -- Expects a list of string commands, and returns back a pair:
@@ -107,9 +100,9 @@ end
 
 function maputils.frontend.quietexecute(cmd)
   local original_echo_setting = GetOption("display_my_input")
-  SetOption ("display_my_input", 0)
+  SetOption("display_my_input", 0)
   Execute(cmd)
-  SetOption ("display_my_input", original_echo_setting)
+  SetOption("display_my_input", original_echo_setting)
 end
 
 function maputils.frontend.execute(cmd)
@@ -140,15 +133,15 @@ function maputils.frontend.alias.pathto(name, line, wildcards)
   end
 
   local fromuid, touid
-  if name == "pathto" or name == "runto" then
+  if name == "mu_pathto" or name == "mu_runto" then
     touid = wildcards[1]
     fromuid = maputils.frontend.curuid
 
-    if fromuid== nil then
+    if fromuid == nil then
       maputils.frontend.object:error("I don't know where you are. Move or type look.")
       return
     end
-  elseif name == "pathto2" then
+  elseif name == "mu_pathto2" then
     fromuid = wildcards[1]
     touid = wildcards[2]
   end
@@ -162,14 +155,14 @@ function maputils.frontend.alias.pathto(name, line, wildcards)
     maputils.frontend.object:note(table.concat(path, ";"))
   end
 
-  if name == "runto" then
+  if name == "mu_runto" then
     local partial, realpath = maputils.frontend.condense(path)
     wait.make(function()
-        maputils.frontend.runsw(realpath)
-        wait.match(maputils.frontend.swendtag, 100, 4)
-        if partial then
-          maputils.frontend.object:note("Speedwalk not completed due to maze.")
-        end
+      maputils.frontend.runsw(realpath)
+      wait.match(maputils.frontend.swendtag, 100, 4)
+      if partial then
+        maputils.frontend.object:note("Speedwalk not completed due to maze.")
+      end
     end)
   end
 
@@ -178,7 +171,6 @@ function maputils.frontend.alias.pathto(name, line, wildcards)
   -- TODO: find a better way to manage this.
   maputils.frontend.object:close()
   maputils.frontend.object:opendb()
-
 end
 
 maputils.frontend.alias.cache = {}

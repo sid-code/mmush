@@ -19,15 +19,17 @@
   </plugin>
 
   <aliases>
-    <alias name="pathto" match="^mu pt (\d+)$" regexp="y" enabled="y"
+    <alias name="mu_pathto" match="^mu pt (\d+)$" regexp="y" enabled="y"
            script="maputils.frontend.alias.pathto" />
-    <alias name="pathto2" match="^mu pt (\d+) (\d+)$" regexp="y" enabled="y"
+    <alias name="mu_pathto2" match="^mu pt (\d+) (\d+)$" regexp="y" enabled="y"
            script="maputils.frontend.alias.pathto" />
-    <alias name="runto" match="^mu rt (\d+)$" regexp="y" enabled="y"
+    <alias name="mu_runto" match="^mu rt (\d+)$" regexp="y" enabled="y"
            script="maputils.frontend.alias.pathto" />
 
-    <alias name="dropcache" match="^mu dropcache$" regexp="y" enabled="y"
-           script="maputils.frontend.alias.dropcache" />
+    <alias name="mu_dropcache" match="^mu cache drop$" regexp="y" enabled="y"
+           script="maputils.frontend.alias.cache.drop" />
+    <alias name="mu_cachestats" match="^mu cache stats$" regexp="y" enabled="y"
+           script="maputils.frontend.alias.cache.stats" />
   </aliases>
   <script>
     <![CDATA[
