@@ -3,6 +3,7 @@
 -- Written by Morn, around 22 September 2019
 local sqlite3 = require('sqlite3')
 require("log")
+require("cache")
 
 -- stolen from winklewinkle's plugin
 function fixsql(s)
@@ -57,8 +58,8 @@ function maputils:new(db_path, maze_db_path)
 
   obj:opendb()
 
-  obj.roomcache = {}
-  obj.pathcache = {}
+  obj.roomcache = cache:new()
+  obj.pathcache = cache:new()
 
   obj.bouncerecall = nil
   obj.bounceportal = nil
@@ -73,8 +74,8 @@ function maputils:opendb()
 end
 
 function maputils:dropcaches()
-  self.roomcache = {}
-  self.pathcache = {}
+  self.roomcache:clear()
+  self.pathcache:clear()
 end
 
 -- Pass in anything that isn't nil or false to detach it.
@@ -154,12 +155,11 @@ function maputils:readbouncesettings()
     self:debug("bounceportal initialized to " .. self.bounceportal.dir .. ".")
   end
 
-
   -- delete the global variables....
   bounce_recall = nil
   bounce_portal = nil
 
-  self.pathcache = {}
+  self.pathcache:clear()
 end
 
 -- Get a room with the specified uid.
@@ -167,15 +167,12 @@ end
 -- @return a row of the database representing a room
 function maputils:getroom(uid)
   local query = string.format(maputils.sql.roombyuid, fixsql(uid))
-  local attempt = self.roomcache[uid]
-  if attempt then
-    return attempt
-  end
-
-  for row in assert(self:dbnrows(query)) do
-    self.roomcache[uid] = row
-    return row
-  end
+  return self.roomcache:lookupor(uid, function(k)
+    for row in assert(self:dbnrows(query)) do
+      self.roomcache:insert(uid, row)
+      return row
+    end
+  end)
 end
 
 -- Poor man's enum for specifying the direction in which to search for

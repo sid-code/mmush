@@ -181,7 +181,20 @@ function maputils.frontend.alias.pathto(name, line, wildcards)
 
 end
 
-function maputils.frontend.alias.dropcache()
+maputils.frontend.alias.cache = {}
+
+function maputils.frontend.alias.cache.drop()
   maputils.frontend.object:dropcaches()
   maputils.frontend.object:log("Dropped caches.")
+end
+
+function maputils.frontend.alias.cache.stats()
+  local o = maputils.frontend.object
+  local rh, rm = o.roomcache:getstats()
+  local ph, pm = o.pathcache:getstats()
+  o:log("Cache stats:")
+  o:log("@WRoom cache:")
+  o:log("@W      HITS: @G" .. rh .. "@W    MISSES: @R" .. rm)
+  o:log("@WPath cache:")
+  o:log("@W      HITS: @G" .. ph .. "@W    MISSES: @R" .. pm)
 end
