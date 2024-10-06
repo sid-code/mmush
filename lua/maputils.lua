@@ -357,7 +357,7 @@ function maputils:findpath(fromuid, touid, level)
     prepath = { self.bouncerecall.dir }
   elseif fromnorecall and not fromnoportal and needtorecall then
     prepath = { self.bounceportal.dir }
-  elseif needtoportal and needtorecall then
+  elseif fromnorecall and fromnoportal then
     prepath = self:GETTODACHOPPA(fromuid, level, jump)
   end
 
