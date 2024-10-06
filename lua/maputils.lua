@@ -23,10 +23,10 @@ maputils = {}
 -- semicolons.
 maputils.sql = {
   roombyuid = "SELECT * FROM rooms WHERE uid = %s",
-  exitsbyuidfrom = 'SELECT fromuid, touid, dir, length(dir) FROM exits WHERE fromuid = %s AND level <= %s AND NOT(touid = "-1")',
-  exitsbyuidto = "SELECT fromuid, touid, dir, length(dir) FROM exits WHERE touid = %s AND (level = NULL or level <= %s)",
-  mexitsbyuidfrom = 'SELECT fromuid, touid, "MAZE(" || fromuid || "," || touid || ")" as dir, 0 FROM mazedb.mexits WHERE fromuid = %s',
-  mexitsbyuidto = 'SELECT fromuid, touid, "MAZE(" || fromuid || "," || touid || ")" as dir, 0 FROM mazedb.mexits WHERE touid = %s',
+  exitsbyuidfrom = 'SELECT fromuid, touid, 1 as cost, dir, length(dir) FROM exits WHERE fromuid = %s AND level <= %s AND NOT(touid = "-1")',
+  exitsbyuidto = "SELECT fromuid, touid, 1 as cost, dir, length(dir) FROM exits WHERE touid = %s AND (level = NULL or level <= %s)",
+  mexitsbyuidfrom = 'SELECT fromuid, touid, 20 as cost, "MAZE(" || fromuid || "," || touid || ")" as dir, 0 FROM mazedb.mexits WHERE fromuid = %s',
+  mexitsbyuidto = 'SELECT fromuid, touid, 20 as cost, "MAZE(" || fromuid || "," || touid || ")" as dir, 0 FROM mazedb.mexits WHERE touid = %s',
 
   getbounces = "SELECT data FROM storage WHERE name = 'bounce_recall' OR name = 'bounce_portal'",
   getareabyname = "SELECT uid FROM areas WHERE name = %s",
@@ -244,7 +244,7 @@ function maputils:getnearbyrooms(uid, direction, level)
     else
       local room = self:getroom(otheruid)
       if room then
-        table.insert(nearbyrooms, { room, row.dir })
+        table.insert(nearbyrooms, { room, row.dir, row.cost })
       end
     end
   end
@@ -257,11 +257,12 @@ function maputils:getnearbyrooms(uid, direction, level)
 end
 
 -- function to make a node in the search tree
-local function makenode(touid, dir, parent)
+local function makenode(touid, dir, parent, edgecost)
   return {
     touid = touid,
     dir = dir,
     parent = parent,
+    cost = (parent or { cost = 0 }).cost + edgecost,
   }
 end
 
@@ -296,7 +297,7 @@ function maputils:findpath(fromuid, touid, level)
   -- (represented by * in the exits table), or the fromuid room.
   local function bfs()
     -- List of searchnodes to explore
-    local stack = { makenode(touid, nil, nil) }
+    local stack = { makenode(touid, nil, nil, 0) }
 
     while #stack > 0 do
       -- Take a node (room) off the stack to search
@@ -322,7 +323,8 @@ function maputils:findpath(fromuid, touid, level)
         for _, connection in pairs(roomsfrom) do
           local fromuid = connection[1].uid
           local dir = connection[2]
-          table.insert(stack, 1, makenode(fromuid, dir, top))
+          local cost = connection[3]
+          table.insert(stack, 1, makenode(fromuid, dir, top, cost))
         end
 
         visited[topuid] = true
@@ -380,7 +382,7 @@ function maputils:GETTODACHOPPA(fromuid, level, jump)
   -- passed in jumptype.
 
   -- BFS implementation is mostly copied from above.
-  local stack = { makenode(fromuid, nil, nil) }
+  local stack = { makenode(fromuid, nil, nil, 0) }
   -- set of visited nodes
   local visited = {}
 
@@ -399,7 +401,8 @@ function maputils:GETTODACHOPPA(fromuid, level, jump)
       for _, connection in pairs(roomsto) do
         local touid = connection[1].uid
         local dir = connection[2]
-        table.insert(stack, 1, makenode(touid, dir, top))
+        local cost = connection[3]
+        table.insert(stack, 1, makenode(touid, dir, top, cost))
       end
 
       visited[topuid] = true
