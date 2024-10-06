@@ -62,7 +62,7 @@ function maze_solver.alias.next_room()
 
     -- there were no unmapped exits in current room - move to next room with unmapped exits
     if roomInTable == false then
-      AddRoom(tt)
+      maze_solver.add_room(tt)
     elseif done == false then
       maze_solver.logger:note("Room " .. thisroom .. " is fully mapped, trying to go to first unmapped room")
 
@@ -164,7 +164,7 @@ function maze_solver.alias.start()
   local tt = gmcp("room.info")
   if tt["zone"] then
     maze_solver.room_table = {}
-    AddRoom(tt)
+    maze_solver.add_room(tt)
   end
 end
 
@@ -284,7 +284,7 @@ function maze_solver.find_path_from_to(from, to)
       -- check first room not visited so far
       for k, v in pairs(room.exits) do
         if not string.find(visited, v) then
-          path = FindPathFromTo(v, to)
+          path = maze_solver.find_path_from_to(v, to)
           maze_solver.logger:note("Path returned : " .. path)
           if not (path == "") then
             return k .. path
