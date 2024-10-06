@@ -244,7 +244,7 @@ end
 visited = ""
 
 function OnPluginInstall()
-  MazeShowHelp()
+  maze_solver.alias.help()
 end
 
 function maze_solver.alias.goto_room(name, line, wildcards)
