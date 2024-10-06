@@ -32,7 +32,7 @@
 <aliases>
   <alias
    match="#maze"
-   script="StartSolver"
+   script="maze_solver.alias.start"
    enabled="y"
    group="Trachx_MazeSolver"
    send_to="12"
@@ -44,7 +44,7 @@
 <aliases>
   <alias
    match="#maze_repop"
-   script="repopsimulate"
+   script="maze_solver.alias.repopsimulate"
    enabled="y"
    group="Trachx_MazeSolver"
    send_to="12"
@@ -58,7 +58,7 @@
 <aliases>
   <alias
    match="#maze_help"
-   script="MazeShowHelp"
+   script="maze_solver.alias.help"
    enabled="y"
    group="Trachx_MazeSolver"
    send_to="12"
@@ -71,7 +71,7 @@
 <aliases>
   <alias
    match="#maze_next"
-   script="MazeNextRoom"
+   script="maze_solver.alias.next_room"
    enabled="y"
    group="Trachx_MazeSolver"
    send_to="12"
@@ -83,7 +83,7 @@
 <aliases>
   <alias
    match="^(?<cmd>#maze_next_dir) ?(?<direction>[neswdu])?$"
-   script="MazeNextRoom_dir"
+   script="maze_solver.alias.next_room_dir"
    enabled="y"
    group="Trachx_MazeSolver"
    send_to="12"
@@ -98,7 +98,7 @@
 
   <alias
    match="^(?<cmd>#maze_goto) ?(?<roomid>[0-9]+)?$"
-   script="MazeGotoRoom"
+   script="maze_solver.alias.goto_room"
    enabled="y"
    group="Trachx_MazeSolver"
    send_to="12"
@@ -112,7 +112,7 @@
 <aliases>
   <alias
    match="#maze_dump"
-   script="MazeDump"
+   script="maze_solver.alias.dump"
    enabled="y"
    group="Trachx_MazeSolver"
    send_to="12"
@@ -124,7 +124,7 @@
 <aliases>
   <alias
    match="#maze_dump_db"
-   script="MazeDumpDB"
+   script="maze_solver.alias.dump_db"
    enabled="y"
    group="Trachx_MazeSolver"
    send_to="12"

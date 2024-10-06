@@ -22,7 +22,9 @@ maze_solver.lastroom = ""
 maze_solver.lastmove = ""
 maze_solver.enable_map = false
 
-function MazeNextRoom_dir(name, line, wildcards)
+maze_solver.alias = {}
+
+function maze_solver.alias.next_room_dir(name, line, wildcards)
   dir = wildcards.direction
   local tt = gmcp("room.info")
 
@@ -33,7 +35,7 @@ function MazeNextRoom_dir(name, line, wildcards)
   Send(dir)
 end
 
-function MazeNextRoom()
+function maze_solver.alias.next_room()
   local tt = gmcp("room.info")
   if tt["zone"] then
     thisroom = tt.num
@@ -68,7 +70,7 @@ function MazeNextRoom()
         if room.area == tt.zone then
           for k, v in pairs(room.exits) do
             if v == "-1" then
-              path = FindPathFromTo(thisroom, room.num)
+              path = maze_solver.find_path_from_to(thisroom, room.num)
               maze_solver.logger:note("Trying " .. room.num .. " path " .. path)
               if not (path == "") then
                 Send("run " .. path)
@@ -86,7 +88,7 @@ function MazeNextRoom()
   end -- tt['zone']
 end
 
-function MazeDumpDB()
+function maze_solver.alias.dump_db()
   require("sqlite3")
   local db_path = GetInfo(66) .. "mazes.db"
   local db = assert(sqlite3.open(db_path))
@@ -117,17 +119,16 @@ CREATE TABLE IF NOT EXISTS mexits (fromuid TEXT, touid TEXT, UNIQUE(fromuid, tou
   --print(stmt)
   local result = assert(db:execute(stmt))
   if result ~= 0 then
-    maze_solver.logger:fatal("ERROR " .. db:errmsg())
+    maze_solver.logger:fatal("ERROR adding exits " .. db:errmsg())
     db:close()
     return
   end
 
   maze_solver.logger:note("Successfully dumped maze to database.")
-
   db:close()
 end
 
-function MazeDump()
+function maze_solver.alias.dump()
   maze_solver.logger:note("Rooms in maze solver tables:")
   for i, room in ipairs(maze_solver.room_table) do
     x = "Room: " .. room.num .. "  " .. room.area .. ", " .. room.name
@@ -139,7 +140,7 @@ function MazeDump()
   end
 end
 
-function MazeShowHelp()
+function maze_solver.alias.help()
   maze_solver.logger:note(" " .. "---------------------------------------------------------------------------- ")
   maze_solver.logger:note(" " .. "Maze solver by Trachx *experimental*                                ver 1.01 ")
   maze_solver.logger:note(" " .. "---------------------------------------------------------------------------- ")
@@ -159,7 +160,7 @@ function MazeShowHelp()
   maze_solver.logger:note(" " .. "---------------------------------------------------------------------------- ")
 end
 
-function StartSolver()
+function maze_solver.alias.start()
   local tt = gmcp("room.info")
   if tt["zone"] then
     maze_solver.room_table = {}
@@ -167,7 +168,7 @@ function StartSolver()
   end
 end
 
-function AddRoom(tt)
+function maze_solver.add_room(tt)
   maze_solver.base_area = tt.zone
   maze_solver.lastroom = tt.num
   exits = tt.exits
@@ -193,7 +194,7 @@ function AddRoom(tt)
   table.insert(maze_solver.room_table, troom)
 end
 
-function repopsimulate()
+function maze_solver.alias.repopsimulate()
   return ""
 end
 
@@ -235,7 +236,7 @@ function OnPluginBroadcast(msg, id, name, text)
     end
 
     if roomIsMapped == false then
-      AddRoom(tt)
+      maze_solver.add_room(tt)
     end
   end
 end
@@ -246,7 +247,7 @@ function OnPluginInstall()
   MazeShowHelp()
 end
 
-function MazeGotoRoom(name, line, wildcards)
+function maze_solver.alias.goto_room(name, line, wildcards)
   maze_solver.logger:note(wildcards.roomid)
   visited = "-1"
   local tt = gmcp("room.info")
@@ -257,7 +258,7 @@ function MazeGotoRoom(name, line, wildcards)
       return
     end
 
-    path = FindPathFromTo(thisroom, wildcards.roomid)
+    path = maze_solver.find_path_from_to(thisroom, wildcards.roomid)
     maze_solver.logger:note("Executing path : " .. path)
     if not (path == "") then
       Send("run " .. path)
@@ -265,7 +266,7 @@ function MazeGotoRoom(name, line, wildcards)
   end
 end
 
-function FindPathFromTo(from, to)
+function maze_solver.find_path_from_to(from, to)
   visited = visited .. "," .. from
 
   local path = ""
