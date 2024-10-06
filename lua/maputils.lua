@@ -229,6 +229,7 @@ function maputils:getnearbyrooms(uid, direction, level)
 
   local nearbyrooms = {}
   local portals = {}
+  local recalls = {}
   for row in assert(self:dbnrows(query)) do
     local otheruid
     if direction == exitdir.to then
@@ -236,8 +237,10 @@ function maputils:getnearbyrooms(uid, direction, level)
     elseif direction == exitdir.from then
       otheruid = row.touid
     end
-    if otheruid == "*" or otheruid == "**" then
+    if otheruid == "*" then
       table.insert(portals, row.dir)
+    elseif otheruid == "**" then
+      table.insert(recalls, row.dir)
     else
       local room = self:getroom(otheruid)
       if room then
@@ -250,7 +253,7 @@ function maputils:getnearbyrooms(uid, direction, level)
     self:attachmazedb("detach")
   end
 
-  return nearbyrooms, portals
+  return nearbyrooms, portals, recalls
 end
 
 -- function to make a node in the search tree
@@ -277,28 +280,14 @@ local function getpath(node, reversed)
   return path
 end
 
+local jumptype = {
+  portal = 0,
+  recall = 1,
+}
+
 function maputils:findpath(fromuid, touid, level)
   -- Set of visited uids
   local visited = {}
-
-  -- First, we need to get to a room that can be exited through a
-  -- portal. If not, we need to create a pre-path that gets us to a
-  -- suitable (portal-able) room.
-  local prepath
-  local fromroom = self:getroom(fromuid)
-  if fromroom.noportal ~= 1 then
-    prepath = {}
-    -- do nothing, we're good!
-  elseif fromroom.norecall ~= 1 and self.bouncerecall then
-    -- it is noportal, but not norecall. Easy, we can just bouncerecall
-    prepath = { self.bouncerecall.dir }
-  else
-    -- norecall and noportal. GET TO THE CHOPPA
-    prepath = self:GETTODACHOPPA(fromuid, level)
-    if prepath == nil then
-      return nil, nil
-    end
-  end
 
   local found = false
 
@@ -310,16 +299,24 @@ function maputils:findpath(fromuid, touid, level)
     local stack = { makenode(touid, nil, nil) }
 
     while #stack > 0 do
+      -- Take a node (room) off the stack to search
       local top = table.remove(stack, #stack)
       local topuid = top.touid
       if not visited[topuid] then
+        -- We found the from room
         if topuid == fromuid then
-          return top, nil
+          return top, nil, nil
         end
 
-        local roomsfrom, portals = self:getnearbyrooms(topuid, exitdir.to, level)
+        -- Get all rooms leading TO the current room
+        local roomsfrom, portals, recalls = self:getnearbyrooms(topuid, exitdir.to, level)
+        -- If there is a portal to any of them, we're good
         if #portals > 0 then
-          return top, portals[1]
+          return top, portals[1], nil
+        end
+        -- If there is a recall to any of them, we're good
+        if #recalls > 0 then
+          return top, nil, recalls[1]
         end
 
         for _, connection in pairs(roomsfrom) do
@@ -332,9 +329,9 @@ function maputils:findpath(fromuid, touid, level)
       end
     end
 
-    return nil, nil
+    return nil, nil, nil
   end
-  local path, portal = bfs()
+  local path, portal, recall = bfs()
 
   if path == nil then
     return nil
@@ -343,13 +340,32 @@ function maputils:findpath(fromuid, touid, level)
   -- Now, we build up the path
   local exitpath = {}
 
-  if portal ~= nil then
-    for i = 1, #prepath do
-      table.insert(exitpath, prepath[i])
-    end
+  local fromroom = self:getroom(fromuid)
 
-    table.insert(exitpath, portal)
+  local prepath
+  local fromnoportal = fromroom.noportal == 1
+  local fromnorecall = fromroom.norecall == 1
+  local needtoportal = portal ~= nil
+  local needtorecall = recall ~= nil
+  local jump = (needtoportal and jumptype.portal) or jumptype.recall
+
+  if needtoportal and not fromnoportal or needtorecall and not fromnorecall then
+    -- We're already in a suitable room to jump out
+    prepath = {}
+  elseif fromnoportal and not fromnorecall and needtoportal then
+    -- We need to portal and
+    prepath = { self.bouncerecall.dir }
+  elseif fromnorecall and not fromnoportal and needtorecall then
+    prepath = { self.bounceportal.dir }
+  elseif needtoportal and needtorecall then
+    prepath = self:GETTODACHOPPA(fromuid, level, jump)
   end
+
+  for i = 1, #prepath do
+    table.insert(exitpath, prepath[i])
+  end
+
+  table.insert(exitpath, (needtoportal and portal) or recall)
 
   local pathtodest = getpath(path)
   for i = 1, #pathtodest do
@@ -359,9 +375,11 @@ function maputils:findpath(fromuid, touid, level)
   return exitpath
 end
 
-function maputils:GETTODACHOPPA(fromuid, level)
-  -- We do a bfs to a portallable room.  This is code duplication,
-  -- but I prefer that to creating convoluted abstractions.
+function maputils:GETTODACHOPPA(fromuid, level, jump)
+  -- We do a bfs to a portallable or recallable room, depending on the
+  -- passed in jumptype.
+
+  -- BFS implementation is mostly copied from above.
   local stack = { makenode(fromuid, nil, nil) }
   -- set of visited nodes
   local visited = {}
@@ -371,7 +389,9 @@ function maputils:GETTODACHOPPA(fromuid, level)
     local topuid = top.touid
     if not visited[topuid] then
       local toproom = self:getroom(topuid)
-      if toproom.noportal ~= 1 or (toproom.norecall ~= 1 and self.bouncerecall.dir) then
+      local canportal = jump == jumptype.portal and toproom.noportal ~= 1
+      local canrecall = jump == jumptype.recall and toproom.norecall ~= 1
+      if canportal or canrecall then
         return getpath(top, 1)
       end
 
