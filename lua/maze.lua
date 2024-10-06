@@ -21,7 +21,6 @@ maze_solver.room_table = {}
 maze_solver.lastroom = ""
 maze_solver.lastmove = ""
 maze_solver.enable_map = false
-maze_solver.done = false
 
 function MazeNextRoom_dir(name, line, wildcards)
   dir = wildcards.direction
@@ -39,7 +38,7 @@ function MazeNextRoom()
   if tt["zone"] then
     thisroom = tt.num
 
-    maze_solver.done = false
+    local done = false
 
     -- find this room and check whethere there are unmapped exits
     local roomInTable = false
@@ -51,7 +50,7 @@ function MazeNextRoom()
             maze_solver.lastmove = k
             maze_solver.enable_map = true
             Send(k)
-            maze_solver.done = true
+            done = true
             break
           end
         end
@@ -62,7 +61,7 @@ function MazeNextRoom()
     -- there were no unmapped exits in current room - move to next room with unmapped exits
     if roomInTable == false then
       AddRoom(tt)
-    elseif maze_solver.done == false then
+    elseif done == false then
       maze_solver.logger:note("Room " .. thisroom .. " is fully mapped, trying to go to first unmapped room")
 
       for i, room in ipairs(maze_solver.room_table) do
@@ -73,13 +72,13 @@ function MazeNextRoom()
               maze_solver.logger:note("Trying " .. room.num .. " path " .. path)
               if not (path == "") then
                 Send("run " .. path)
-                maze_solver.done = true
+                done = true
                 break
               end
             end
           end -- for exits in room
         end
-        if maze_solver.done == true then
+        if done == true then
           break
         end
       end -- for
@@ -221,7 +220,6 @@ function OnPluginBroadcast(msg, id, name, text)
     local tt = gmcp("room.info")
     thisroom = tt.num
 
-    maze_solver.done = false
     maze_solver.enable_map = false
     roomIsMapped = false
 
