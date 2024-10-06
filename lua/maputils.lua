@@ -342,7 +342,7 @@ function maputils:findpath(fromuid, touid, level)
 
   local fromroom = self:getroom(fromuid)
 
-  local prepath
+  local prepath = {}
   local fromnoportal = fromroom.noportal == 1
   local fromnorecall = fromroom.norecall == 1
   local needtoportal = portal ~= nil
