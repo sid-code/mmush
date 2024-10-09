@@ -28,10 +28,16 @@
 <!--  Aliases  -->
 
 <aliases>
-  <alias match="mq add *"    enabled="y" sequence="100" script="move_queue.alias.add" />
-  <alias match="mq use *"    enabled="y" sequence="100" script="move_queue.alias.use" />
-  <alias match="mq rm *"     enabled="y" sequence="100" script="move_queue.alias.delete" />
-  <alias match="mq list"     enabled="y" sequence="100" script="move_queue.alias.list" />
+  <alias match="mq add *" name="mq_add"
+         enabled="y" sequence="100" script="move_queue.alias.add" />
+  <alias match="mq part *" name="mq_use_part"
+         enabled="y" sequence="100" script="move_queue.alias.use" />
+  <alias match="mq use *" name="mq_use"
+         enabled="y" sequence="100" script="move_queue.alias.use" />
+  <alias match="mq rm *" name="mq_rm"
+         enabled="y" sequence="100" script="move_queue.alias.delete" />
+  <alias match="mq list" name="mq_list"
+         enabled="y" sequence="100" script="move_queue.alias.list" />
 
   <!-- only call this if you made a move queue before oct 2024 -->
   <alias match="mq migrate"  enabled="y" sequence="100" script="move_queue.alias.migrate" />

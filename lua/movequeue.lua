@@ -99,29 +99,54 @@ function move_queue.alias.list(name, line, wildcards)
   end
 end
 
--- Use the move
-local function mq_use(room_ids, start_room) end
+-- @param room_ids {function} an iterator that returns successive string room IDs
+-- @param start_room {string|nil} an optional start room
+local function mq_use(room_ids, start_room)
+  local adding = false
+  if start_room == nil then
+    adding = true
+  end
+
+  Execute("cqs move flush")
+
+  for room_id in room_ids do
+    if adding then
+      Execute(mq_get_command(room_id))
+    end
+
+    if tostring(start_room) == room_id then
+      adding = true
+    end
+  end
+end
 
 function move_queue.alias.use(name, line, wildcards)
   local mq_name = wildcards[1]
   local room_ids = mq_get(mq_name)
 
   if room_ids == nil then
-    move_queue.logger:error("Move queue " .. mq_name .. " does not exist.")
+    move_queue.logger:error("Move queue " .. highlight(mq_name) .. " does not exist.")
     return
   end
 
-  Execute("cqs move flush")
-
-  for room_id in string.gmatch(room_ids, "%d+") do
-    Execute(mq_get_command(room_id))
+  local start_room
+  if name == "mq_use_part" then
+    start_room = move_queue.cur_room
+    if start_room == nil then
+      move_queue.logger:error(
+        "Cannot partially load move queue because current location is unknown. Loading entire queue."
+      )
+    else
+      move_queue.logger:note(
+        "Attempting to load " .. highlight(mq_name) .. " partially, starting at " .. highlight(start_room) .. "."
+      )
+    end
+  else
+    start_room = nil
   end
 
-  move_queue.logger:note("Loaded up move queue " .. mq_name .. ".")
-end
-
-function move_queue.alias.use_partial(name, line, wildcards)
-  local cr = move_queue.cur_room
+  mq_use(string.gmatch(room_ids, "%d+"), start_room)
+  move_queue.logger:note("Loaded up move queue " .. highlight(mq_name) .. ".")
 end
 
 function move_queue.alias.migrate(name, line, wildcards)
