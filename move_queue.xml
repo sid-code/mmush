@@ -28,33 +28,13 @@
 <!--  Aliases  -->
 
 <aliases>
-  <alias
-   match="mq add *"
-   enabled="y"
-   sequence="100"
-   script="mq_add"
-  />
+  <alias match="mq add *"    enabled="y" sequence="100" script="move_queue.alias.add" />
+  <alias match="mq use *"    enabled="y" sequence="100" script="move_queue.alias.use" />
+  <alias match="mq rm *"     enabled="y" sequence="100" script="move_queue.alias.delete" />
+  <alias match="mq list"     enabled="y" sequence="100" script="move_queue.alias.list" />
 
-  <alias
-   match="mq use *"
-   enabled="y"
-   sequence="100"
-   script="mq_use"
-  />
-
-  <alias
-   match="mq rm *"
-   enabled="y"
-   sequence="100"
-   script="mq_delete"
-  />
-
-  <alias
-   match="mq list"
-   enabled="y"
-   sequence="100"
-   script="mq_display_all"
-  />
+  <!-- only call this if you made a move queue before oct 2024 -->
+  <alias match="mq migrate"  enabled="y" sequence="100" script="move_queue.alias.migrate" />
 </aliases>
 
 <!--  Script  -->
@@ -62,91 +42,13 @@
 
 <script>
 <![CDATA[
-
-
-local cur_room = nil
-
-require "gmcphelper"
-
-function OnPluginBroadcast(msg, id, name, text)
-  if (id == '3e7dedbe37e44942dd46d264') then
-    if (text == "room.info") then
-      res, gmcparg = CallPlugin("3e7dedbe37e44942dd46d264","gmcpval","room.info")
-
-      luastmt = "gmcpdata = " .. gmcparg
-      assert (loadstring (luastmt or "")) ()
-
-      cur_room = gmcpval("num")
-    end
-  end
-
-end
-
-function mq_get(mq_name)
-  return GetVariable("mq" .. mq_name)
-end
-
-function mq_set(mq_name, new_str)
-  return SetVariable("mq" .. mq_name, new_str)
-end
-
-function mq_add_roomid(mq_name, room)
-  local queue_str = mq_get(mq_name) 
-  if queue_str == nil then
-    mq_set(mq_name, "")
-    queue_str = ""
-  end
-
-  local move_command = "cqs move mapper goto " .. room
-
-  queue_str = queue_str .. "\n" .. move_command
-
-  mq_set(mq_name, queue_str)
-end
-
-function mq_delete(name, line, wildcards)
-  local mq_name = wildcards[1]
-  DeleteVariable("mq" .. mq_name)
-
-  Note("Move queue " .. mq_name .. " deleted.")
-end
-
-function mq_add(name, line, wildcards)
-  if cur_room == nil then
-    Note("Error: I don't know where you are. Try moving or typing 'look'.")
-    return
-  end
-
-  local mq_name = wildcards[1]
-  local queue_str = mq_get(mq_name) 
-
-  mq_add_roomid(mq_name, tostring(cur_room))
-
-  Note("Added room " .. cur_room .. " to move queue " .. mq_name .. ".")
-
-end
-
-function mq_display_all(name, line, wildcards)
-  local vl = GetVariableList()
-  for k, v in pairs(vl) do
-    Note(k)
-  end
-end
-
-function mq_use(name, line, wildcards)
-  local mq_name = wildcards[1]
-  local queue_str = mq_get(mq_name) 
-  if queue_str == nil then
-    Note("Error: move queue " .. mq_name .. " does not exist.")
-    return
-  end
-
-  Execute("cqs move flush")
-  Execute(queue_str)
-
-  Note("Loaded up move queue " .. mq_name .. ".")
-end
-
+      -- set up require path (stolen from mobber)
+      local path = string.match(GetPluginInfo(GetPluginID(), 6), "(.*)\\.*$") .. "\\lua\\"
+      package.path = path .. "?;" .. path .. "?.lua;" .. package.path
+         
+      -- load the real plugin code
+      require("movequeue")
+      move_queue.init()
 ]]>
 </script>
 
