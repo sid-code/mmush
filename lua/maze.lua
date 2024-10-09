@@ -36,7 +36,14 @@ function maze_solver.alias.next_room_dir(name, line, wildcards)
 end
 
 function maze_solver.alias.next_room()
-  local tt = gmcp("room.info")
+  local ok, tt = pcall(function()
+    return gmcp("room.info")
+  end)
+  if not ok then
+    maze_solver.logger:error(tt)
+    return
+  end
+
   if tt["zone"] then
     thisroom = tt.num
 
