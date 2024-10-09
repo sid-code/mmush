@@ -141,6 +141,7 @@
          
       -- load the real plugin code
       require("maze")
+      maze_solver.init()
     ]]>
 </script>
 

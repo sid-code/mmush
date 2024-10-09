@@ -2,27 +2,93 @@
 
 require("gmcphelper")
 require("log")
+require("pluginids")
+require("events")
+require("gmcpevents")
 
 maze_solver = {}
-
-maze_solver.logger = log:new(
-  log.theme:new({
-    all = "@x172MAZE:@w $MSG",
-    error = "@x172MAZE @RERROR:@w $MSG",
-    fatal = "@x172MAZE @rFATAL:@w $MSG",
-  }),
-  log.level.debug
-)
-
-maze_solver.base_area = ""
-
-maze_solver.room_table = {}
-
-maze_solver.lastroom = ""
-maze_solver.lastmove = ""
-maze_solver.enable_map = false
-
 maze_solver.alias = {}
+
+geo = globaleventobject
+function maze_solver.init()
+  maze_solver.logger = log:new(
+    log.theme:new({
+      all = "@x172MAZE:@w $MSG",
+      error = "@x172MAZE @RERROR:@w $MSG",
+      fatal = "@x172MAZE @rFATAL:@w $MSG",
+    }),
+    log.level.debug
+  )
+
+  maze_solver.base_area = ""
+
+  maze_solver.room_table = {}
+
+  maze_solver.lastroom = ""
+  maze_solver.lastmove = ""
+  maze_solver.enable_map = false
+
+  geo:on("install", function()
+    maze_solver.alias.help()
+  end)
+
+  geo:on("broadcast", function(event)
+    maze_solver.broadcast_handler(event.msg, event.id, event.name, event.text)
+  end)
+
+  geo:on("aard_gmcp_repop", function()
+    local tt = gmcp("room.info")
+    local removed = false
+    if tt["zone"] then
+      for i = #maze_solver.room_table, 1, -1 do
+        if maze_solver.room_table[i].area == tt.zone then
+          table.remove(maze_solver.room_table, i)
+          removed = true
+        end
+      end
+
+      if removed then
+        maze_solver.logger:note("Some rooms were removed due to repop in area " .. tt.zone)
+      end
+    end
+  end)
+
+  geo:on("aard_gmcp_move_room", function()
+    if not maze_solver.enable_map then
+      return
+    end
+
+    local tt = gmcp("room.info")
+    local thisroom = tt.num
+
+    maze_solver.enable_map = false
+    local roomIsMapped = false
+
+    for i, room in ipairs(maze_solver.room_table) do
+      -- add exit in previous room
+      if room.num == maze_solver.lastroom then
+        room.exits[maze_solver.lastmove] = thisroom
+      end
+      -- check whether curren room is in table
+      if room.num == thisroom then
+        roomIsMapped = true
+      end
+    end
+
+    if not roomIsMapped then
+      maze_solver.add_room(tt)
+    end
+  end)
+end
+
+function maze_solver.broadcast_handler(msg, id, name, text)
+  -- if repop occured - remove rooms from repop area
+  if id == pluginids.mush.gmcphelper and text == "comm.repop" then
+  end
+
+  if id == pluginids.mush.gmcphelper and text == "room.info" and maze_solver.enable_map then
+  end
+end
 
 function maze_solver.alias.next_room_dir(name, line, wildcards)
   dir = wildcards.direction
@@ -205,54 +271,7 @@ function maze_solver.alias.repopsimulate()
   return ""
 end
 
-function OnPluginBroadcast(msg, id, name, text)
-  -- if repop occured - remove rooms from repop area
-  if id == "3e7dedbe37e44942dd46d264" and text == "comm.repop" then
-    local tt = gmcp("room.info")
-    removed = false
-    if tt["zone"] then
-      for i = #maze_solver.room_table, 1, -1 do
-        if maze_solver.room_table[i].area == tt.zone then
-          table.remove(maze_solver.room_table, i)
-          removed = true
-        end
-      end
-
-      if removed then
-        maze_solver.logger:note("MazeSolver: Some rooms were removed due to repop in area " .. tt.zone)
-      end
-    end
-  end
-
-  if id == "3e7dedbe37e44942dd46d264" and text == "room.info" and maze_solver.enable_map then
-    local tt = gmcp("room.info")
-    thisroom = tt.num
-
-    maze_solver.enable_map = false
-    roomIsMapped = false
-
-    for i, room in ipairs(maze_solver.room_table) do
-      -- add exit in previous room
-      if room.num == maze_solver.lastroom then
-        room.exits[maze_solver.lastmove] = thisroom
-      end
-      -- check whether curren room is in table
-      if room.num == thisroom then
-        roomIsMapped = true
-      end
-    end
-
-    if roomIsMapped == false then
-      maze_solver.add_room(tt)
-    end
-  end
-end
-
-visited = ""
-
-function OnPluginInstall()
-  maze_solver.alias.help()
-end
+local visited = ""
 
 function maze_solver.alias.goto_room(name, line, wildcards)
   maze_solver.logger:note(wildcards.roomid)
