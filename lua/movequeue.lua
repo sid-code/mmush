@@ -9,12 +9,20 @@ move_queue.alias = {}
 
 move_queue.cur_room = nil
 
+-- TODO: make this more general
+local log_color = "@x123"
+local highlight_color = "@Y"
+
+local function highlight(str)
+  return highlight_color .. str .. log_color
+end
+
 move_queue.logger = log:new(
   log.theme:new({
-    all = "@Gmove_queue:@x123 $MSG",
-    warn = "@Ymove_queue:@x123 $MSG",
-    error = "@Rmove_queue:@x123 $MSG",
-    fatal = "@Rmove_queue:@x123 $MSG",
+    all = "@Gmove_queue:" .. log_color .. " $MSG",
+    warn = "@Ymove_queue:" .. log_color .. " $MSG",
+    error = "@Rmove_queue:" .. log_color .. " $MSG",
+    fatal = "@Rmove_queue:" .. log_color .. " $MSG",
   }),
   log.level.info
 )
