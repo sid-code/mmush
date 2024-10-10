@@ -2,7 +2,9 @@ require("gmcphelper")
 require("events")
 require("gmcpevents")
 require("log")
+require("wait")
 
+local geo = globaleventobject
 move_queue = {}
 
 move_queue.alias = {}
@@ -28,7 +30,6 @@ move_queue.logger = log:new(
 )
 
 function move_queue.init()
-  local geo = globaleventobject
   geo:on("aard_gmcp_move_room", function()
     move_queue.cur_room = gmcp("room.info.num")
   end)
@@ -157,4 +158,71 @@ function move_queue.alias.migrate(name, line, wildcards)
     v = string.gsub(v, "cqs move mapper goto ", "")
     mq_set(k, v)
   end
+end
+
+local function mq_record(mq_name)
+  if move_queue.current_recording ~= nil then
+    move_queue.logger:error("You are already recording a move queue.")
+    move_queue.logger:error(
+      "Use " .. highlight("mq record end") .. " or " .. highlight("mq record abort") .. " before recording a new one."
+    )
+  end
+
+  move_queue.current_recording = {}
+
+  local rec = move_queue.current_recording
+  rec.name = mq_name
+  rec.rooms = {}
+  rec.index = 1
+
+  local function record_room()
+    local room_id = gmcp("room.info.num")
+    print(room_id, rec.name)
+    if rec.rooms[rec.index - 1] == room_id then
+      move_queue.logger:note(
+        "Not adding duplicate room " .. highlight(room_id) .. " to move queue " .. highlight(rec.name) .. "."
+      )
+      return
+    end
+
+    move_queue.logger:note("Adding " .. highlight(room_id) .. " to move queue " .. highlight(rec.name) .. ".")
+    rec.rooms[rec.index] = room_id
+    rec.index = rec.index + 1
+  end
+
+  local function deregister_handlers()
+    geo:deregister("aard_gmcp_move_room", record_room)
+    geo:deregister("mq_record_end", end_recording)
+    geo:deregister("mq_record_abort", abort_recording)
+  end
+
+  local function save_recording()
+    move_queue.logger:note("Saving recording of move queue " .. highlight(rec.name) .. ".")
+    mq_set(rec.name, table.concat(rec.rooms, ","))
+  end
+
+  local function end_recording()
+    deregister_handlers()
+    save_recording()
+    move_queue.current_recording = nil
+  end
+  local function abort_recording()
+    move_queue.logger:note("Aborting recording!")
+    deregister_handlers()
+    move_queue.current_recording = nil
+  end
+
+  geo:on("aard_gmcp_move_room", record_room)
+  geo:on("mq_record_end", end_recording)
+  geo:on("mq_record_abort", abort_recording)
+end
+
+function move_queue.alias.record(name, line, wildcards)
+  local mq_name = wildcards[1]
+
+  mq_record(mq_name)
+end
+
+function move_queue.alias.record_event(name, line, wildcards)
+  geo:trigger(event:new(name))
 end

@@ -38,6 +38,12 @@
          enabled="y" sequence="100" script="move_queue.alias.delete" />
   <alias match="mq list" name="mq_list"
          enabled="y" sequence="100" script="move_queue.alias.list" />
+  <alias match="mq record name *" name="mq_record"
+         enabled="y" sequence="100" script="move_queue.alias.record" />
+  <alias match="mq record end" name="mq_record_end"
+         enabled="y" sequence="100" script="move_queue.alias.record_event" />
+  <alias match="mq record abort" name="mq_record_abort"
+         enabled="y" sequence="100" script="move_queue.alias.record_event" />
 
   <!-- only call this if you made a move queue before oct 2024 -->
   <alias match="mq migrate"  enabled="y" sequence="100" script="move_queue.alias.migrate" />
