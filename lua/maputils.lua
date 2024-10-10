@@ -349,7 +349,7 @@ function maputils:findpath(fromuid, touid, level)
   local fromnorecall = fromroom.norecall == 1
   local needtoportal = portal ~= nil
   local needtorecall = recall ~= nil
-  local jump = (needtoportal and jumptype.portal) or jumptype.recall
+  local jump = (needtoportal and jumptype.portal) or (needtorecall and jumptype.recall) or nil
 
   if needtoportal and not fromnoportal or needtorecall and not fromnorecall then
     -- We're already in a suitable room to jump out
@@ -359,7 +359,7 @@ function maputils:findpath(fromuid, touid, level)
     prepath = { self.bouncerecall.dir }
   elseif fromnorecall and not fromnoportal and needtorecall then
     prepath = { self.bounceportal.dir }
-  elseif fromnorecall and fromnoportal then
+  elseif jump ~= nil and fromnorecall and fromnoportal then
     prepath = self:GETTODACHOPPA(fromuid, level, jump)
   end
 
